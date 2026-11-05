@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { TrustBadge } from "@/components/ui/trust-badge";
 import {
   calculatePledgeCheckout,
@@ -32,6 +33,7 @@ export interface SerializableAddon {
 }
 
 export interface ProjectTierSelectorProps {
+  campaignSlug: string;
   campaignTitle: string;
   pledgedFormatted: string;
   goalFormatted: string;
@@ -43,6 +45,7 @@ export interface ProjectTierSelectorProps {
 }
 
 export function ProjectTierSelector({
+  campaignSlug,
   campaignTitle,
   pledgedFormatted,
   goalFormatted,
@@ -183,13 +186,18 @@ export function ProjectTierSelector({
         )}
 
         {/* Primary "Back This Project" CTA Button */}
-        <button
-          type="button"
-          onClick={() => setPledgeSuccessModal(true)}
-          className="w-full rounded-md bg-[#16A34A] py-3 px-4 text-sm font-semibold text-[#FFFFFF] shadow-sm hover:bg-[#15803D] transition-colors"
+        <Link
+          href={`/projects/${campaignSlug}/pledge?tier=${encodeURIComponent(
+            selectedTier?.id ?? ""
+          )}${
+            selectedAddonIds.length > 0
+              ? `&addons=${encodeURIComponent(selectedAddonIds.join(","))}`
+              : ""
+          }`}
+          className="block w-full rounded-md bg-[#16A34A] py-3 px-4 text-center text-sm font-semibold text-[#FFFFFF] shadow-sm hover:bg-[#15803D] transition-colors"
         >
           Back This Project — {formatPaiseToINR(checkoutSummary.totalPaidPaise)}
-        </button>
+        </Link>
 
         {/* Dedicated Trust & Escrow Protection Callout Card right below Back This Project button */}
         <div className="rounded-md border border-[#BBF7D0] bg-[#F0FDF4] p-4 space-y-1.5">

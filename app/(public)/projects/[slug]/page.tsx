@@ -260,6 +260,7 @@ export default async function PublicProjectPage({
         {/* Right Column (5 cols): Sticky Reward Tier Selector & Trust Callout */}
         <div className="lg:col-span-5">
           <ProjectTierSelector
+            campaignSlug={campaign.slug}
             campaignTitle={campaign.title}
             pledgedFormatted={formatPaiseToINR(campaign.pledgedAmountPaise, {
               includePaiseDecimals: false,

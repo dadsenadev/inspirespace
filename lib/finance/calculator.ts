@@ -89,6 +89,8 @@ export const TRANCHE_3_WEIGHT_BPS = 3_000n;
 
 /** Standard Chart of Accounts (CoA) Codes for Double-Entry Ledger */
 export const LEDGER_ACCOUNTS = {
+  GATEWAY_ESCROW_RECEIVABLE: "GATEWAY_ESCROW_RECEIVABLE",
+  CAMPAIGN_ESCROW_LIABILITY: "CAMPAIGN_ESCROW_LIABILITY",
   RAZORPAY_NODAL_CLEARING: "ASSET:RAZORPAY_NODAL_CLEARING",
   ESCROW_TRUST_BANK: "ASSET:ESCROW_TRUST_BANK",
   BACKER_ESCROW_LIABILITY: "LIABILITY:BACKER_ESCROW_PAYABLE",
@@ -360,6 +362,7 @@ export function calculatePledgeCheckout(
 
 /**
  * Generates balanced double-entry ledger lines when a backer's pledge is captured into escrow.
+ * Debits `GATEWAY_ESCROW_RECEIVABLE` and credits `CAMPAIGN_ESCROW_LIABILITY`.
  */
 export function buildPledgeCaptureLedgerEntries(params: {
   pledgeId: string;
@@ -374,8 +377,8 @@ export function buildPledgeCaptureLedgerEntries(params: {
     {
       referenceType: "PLEDGE_CAPTURE",
       referenceId: params.pledgeId,
-      debitAccount: LEDGER_ACCOUNTS.ESCROW_TRUST_BANK,
-      creditAccount: LEDGER_ACCOUNTS.BACKER_ESCROW_LIABILITY,
+      debitAccount: LEDGER_ACCOUNTS.GATEWAY_ESCROW_RECEIVABLE,
+      creditAccount: LEDGER_ACCOUNTS.CAMPAIGN_ESCROW_LIABILITY,
       amountPaise: params.totalPaidPaise,
       metadataJson: {
         campaignId: params.campaignId,
@@ -383,7 +386,40 @@ export function buildPledgeCaptureLedgerEntries(params: {
         razorpayOrderId: params.razorpayOrderId,
         razorpayPaymentId: params.razorpayPaymentId,
         narration:
-          "Backer pledge captured and locked in All-or-Nothing Escrow Trust Account",
+          "Backer pledge captured via Razorpay and locked in All-or-Nothing Campaign Escrow Liability",
+      },
+    },
+  ];
+}
+
+/**
+ * Generates balanced double-entry reversal ledger lines when an All-or-Nothing
+ * campaign misses its goal and refunds a captured backer pledge.
+ * Debits `CAMPAIGN_ESCROW_LIABILITY` and credits `GATEWAY_ESCROW_RECEIVABLE`.
+ */
+export function buildPledgeRefundLedgerEntries(params: {
+  pledgeId: string;
+  campaignId: string;
+  totalPaidPaise: bigint;
+  razorpayPaymentId: string;
+  razorpayRefundId: string;
+}): DoubleEntryLedgerLine[] {
+  assertPositivePaise(params.totalPaidPaise, "totalPaidPaise");
+
+  return [
+    {
+      referenceType: "PLEDGE_REFUND",
+      referenceId: params.pledgeId,
+      debitAccount: LEDGER_ACCOUNTS.CAMPAIGN_ESCROW_LIABILITY,
+      creditAccount: LEDGER_ACCOUNTS.GATEWAY_ESCROW_RECEIVABLE,
+      amountPaise: params.totalPaidPaise,
+      metadataJson: {
+        campaignId: params.campaignId,
+        pledgeId: params.pledgeId,
+        razorpayPaymentId: params.razorpayPaymentId,
+        razorpayRefundId: params.razorpayRefundId,
+        narration:
+          "All-or-Nothing campaign expiry refund disbursed to backer via Razorpay Refunds API",
       },
     },
   ];
